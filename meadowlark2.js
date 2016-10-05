@@ -3,7 +3,7 @@ var express = require('express');
 var app = express();
 
 //handlebar view engine settings
-var handlebars = require('express-handlebars').create({ defaultLayout:'main' });
+var handlebars = require('express-handlebars').create({ defaultLayout:'main2' });
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
@@ -17,13 +17,19 @@ var fortunes = [
 
 app.set('port', process.env.PORT || 3000);
 //app.get method : adds route
-app.get('/', function(req, res){
-	res.render('home');
+app.get('/login', function(req, res){
+	res.render('login');
 });
 
+app.get('/join', function(req, res){
+	res.render('join');
+});
+
+app.get('/search', function(req, res){
+	res.render('search');
+});
 app.get('/about', function(req, res){
-	var randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
-	res.render('about', {fortune: randomFortune});
+	res.render('search');
 });
 
 //add static middleware
