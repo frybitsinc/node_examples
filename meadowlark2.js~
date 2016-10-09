@@ -1,0 +1,81 @@
+var express = require('express');
+var app = express();
+var login = require('./lib/logged_in.js');
+var logged_in = true;
+//mssql connect
+var Connection = require('tedious').Connection;
+var config = {
+ 	userName: 'sangbusangjo1',  
+        password: '1215082s!',  
+        server: 'masickdangserver.database.windows.net',  
+        // If you are on Microsoft Azure, you need this:  
+        options: {encrypt: true, database: 'MASICKDANG'}
+};
+var fortune = require('./lib/fortune.js');
+
+//handlebar view engine settings
+var handlebars = require('express-handlebars').create({ defaultLayout:'main2' });
+app.engine('handlebars', handlebars.engine);
+app.set('view engine', 'handlebars');
+
+var fortunes = [
+	"제육","보쌈","족발", "치킨", "피자", 
+	"샌드위치", "베이글", "규동", "가츠동",
+	"면", "밥", "빵",
+	"일식","중식", "금식","학식", 
+	"국밥",  "고기", "채식", "육식",
+	"한식", "샐러드",
+	"평양냉면", "고쌈", "비냉", "물냉", "밀면",
+	"짜장","짬뽕", "탕수육", "라조기덮밥","버섯덮밥",
+];
+
+app.set('port', process.env.PORT || 3000);
+//app.post method : for insert query
+app.post('/join', function(req, res){
+	var user = {
+		'userid':req.body.userid, 
+		'password':req.body.password, 
+		'nickname':req.body.nickname, 
+		'email':req.body.email,
+		'gender':req.body.gender }; 
+});
+//app.get method : adds route
+app.get('/login', function(req, res){
+if(logged_in){	res.render('login', {login: './lib/logged_in.handlebars' });}
+
+});
+app.get('/', function(req, res){
+	res.render('home');
+});
+
+app.get('/join', function(req, res){
+	res.render('join');
+});
+
+app.get('/search', function(req, res){
+	res.render('search');
+});
+app.get('/fortune', function(req, res){
+	res.render('fortune', {fortune: fortune.getFortune()});
+});
+
+//add static middleware
+app.use(express.static(__dirname + '/public'));
+
+//404 폴백(catch-all) handler (middleware)
+app.use(function(req, res, next){
+	res.status(404);
+	res.render('about');
+});
+
+//500 error handler (middleware)
+app.use(function(err, req, res, next){
+	console.error(err.stack);
+	res.status(500);
+	res.render('500');	
+});
+
+app.listen(app.get('port'), function(){
+	console.log('Express started on http://localhost:' +
+		app.get('port') + '; press Ctrl-C to terminate. ');
+});

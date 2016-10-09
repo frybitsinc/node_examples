@@ -1,47 +1,22 @@
 var express = require('express');
 var app = express();
+var login = require('./lib/logged_in.js');
+var logged_in = true;
 //mssql connect
-var sql = require('mssql');
+var Connection = require('tedious').Connection;
 var config = {
-	user:'sangbusangjo1', 
-	password:'1215082s!', 
-	server:'masickdangserver', 
-	database:'masickdangDB',
-	stream:true,
-	options:{
-		encrypt:true
-	} 
-}
-//var connection = new sql.Connection(config, function(err){
-	//error check
-//	console.log("connection error");
-	
-//	var query = connection.query('select * from dbo.SHOP',funtion(err, recordset){
-//		console.dir(recordset);
-		//res.json(recordset);
-//	});
-//	console.log(query);
-//});
+ 	userName: 'sangbusangjo1',  
+        password: '1215082s!',  
+        server: 'masickdangserver.database.windows.net',  
+        // If you are on Microsoft Azure, you need this:  
+        options: {encrypt: true, database: 'MASICKDANG'}
+};
+var fortune = require('./lib/fortune.js');
 
 //handlebar view engine settings
 var handlebars = require('express-handlebars').create({ defaultLayout:'main2' });
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
-
-var fortunes = [
-	"GOOOOOD", 
-	"IILLLLL", 
-	"CHILLLL",
-	"SSWEEEEEET",
-	"LOVELYY!!", 
-	"FANTASTIC!",
-	"EVERY THINGS GONNA BE ALLRIGHT!", 
-	"BUY LOTTO!!!!!!",  
-	"BAAAAAAAADDD", 
-	"SOOOOOSOOOOOO", 
-	"MISERABLE", 
-	"PATHETIC", 
-];
 
 app.set('port', process.env.PORT || 3000);
 //app.post method : for insert query
@@ -51,43 +26,23 @@ app.post('/join', function(req, res){
 		'password':req.body.password, 
 		'nickname':req.body.nickname, 
 		'email':req.body.email,
-		'gender':req.body.gender };
-	var query = connection.query('insert into users set ?',user,function(err,result){
-		if(err){
-			console.error(err);
-			throw err;
-		}
-		console.log(query);
-		res.send(200, 'success');
-	});	
+		'gender':req.body.gender }; 
+});
+app.post('/search', function(req, res){
+	var menu = {
+		'hours':req.body.hours, 
+		'minutes':req.body.minutes, 
+		'man':req.body.man, 
+		'cheon':req.body.cheon,
+		'menu':req.body.menu }; 
 });
 //app.get method : adds route
 app.get('/login', function(req, res){
-	sql.connect(config, function(err){
-//		var req = new sql.Request();
-//		req.stream = true;
-//		req.query('select * from dbo.SHOP');
-//		var data = "<html> <head> <title> mssql test</title> </head>"
-//		data += "<h1>TEST</h1>"
-//		data += "<table border=\"1\">"
-//		data += "<tr><th>IP</th><th>CURDATE</th><tr>"
-//		req.on('row', function(row){
-//			data += "<tr>"
-//			data += "<td>" + row.IP + "</td>"
-//			data += "<td>" + row.CURDATE + "</td>";
-//			data += "</tr>"
-//		});
-//		req.on('done', function(returnValue){
-//			data += "</table></html>" 
-//			res.send(data);
-//		});
-	});
-	//var query = connection.query('select * from dbo.SHOP',funtion(err, recordset){
-	//	console.dir(recordset);
-	//	res.json(recordset);
-	//});
-	//console.log(query);
-	res.render('login');
+if(logged_in){	res.render('login', {login: './lib/logged_in.handlebars' });}
+
+});
+app.get('/', function(req, res){
+	res.render('home');
 });
 
 app.get('/join', function(req, res){
@@ -96,10 +51,42 @@ app.get('/join', function(req, res){
 
 app.get('/search', function(req, res){
 	res.render('search');
+var connection = new Connection(config);  
+connection.on('connect', function(err) {  
+	// If no error, then good to proceed.  
+        console.log("Connected");
+	if(err) return console.error(err);
+	executeStatement();
+});
+var Request = require('tedious').Request;  
+    var TYPES = require('tedious').TYPES;  
+  
+    function executeStatement() {  
+        request = new Request("SELECT ShopName from SHOP where SHOPNO IN (SELECT DISTINCT SHOPNO from MENU where TYPE = '주메뉴' and PRICE <= 3000)", function(err) {  
+        if (err) {  
+            console.log(err);}  
+        });  
+        var result = "";  
+        request.on('row', function(columns) {  
+            columns.forEach(function(column) {  
+              if (column.value === null) {  
+                console.log('NULL');  
+              } else {  
+                result+= column.value + " ";  
+              }  
+            });  
+            console.log(result);  
+            result ="";  
+        });  
+  
+        request.on('done', function(rowCount, more) {  
+        console.log(rowCount + ' rows returned');  
+        });  
+        connection.execSql(request);  
+    }  
 });
 app.get('/fortune', function(req, res){
-	var randomFortune = fortunes[Math.floor(Math.random()*fortunes.length)];
-	res.render('fortune', {fortune: randomFortune});
+	res.render('fortune', {fortune: fortune.getFortune()});
 });
 
 //add static middleware
