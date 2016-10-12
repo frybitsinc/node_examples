@@ -1,43 +1,68 @@
 var express = require('express');
 var app = express();
+var bodyParser = require('body-parser');
+app.use(bodyParser.json());
+//sql connect
+const pg = require('pg');
+const conString = 'postgres://root:0909@localhost/masickdang'; 
+pg.connect(conString, function (err, client, done) {  
+  if (err) {
+    return console.error('error fetching client from pool', err)
+  }
+  client.query('SELECT * from USER', function (err, result) {
+    done();
+
+    if (err) {
+      return console.error('error happened during query', err)
+    }
+    console.log(result.rows[0]);
+  });
+});
+//login
 var login = require('./lib/logged_in.js');
 var logged_in = true;
-//mssql connect
-var Connection = require('tedious').Connection;
-var config = {
- 	userName: 'sangbusangjo1',  
-        password: '1215082s!',  
-        server: 'masickdangserver.database.windows.net',  
-        // If you are on Microsoft Azure, you need this:  
-        options: {encrypt: true, database: 'MASICKDANG'}
-};
+//what to eat feature
 var fortune = require('./lib/fortune.js');
-
 //handlebar view engine settings
 var handlebars = require('express-handlebars').create({ defaultLayout:'main2' });
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
-var fortunes = [
-	"제육","보쌈","족발", "치킨", "피자", 
-	"샌드위치", "베이글", "규동", "가츠동",
-	"면", "밥", "빵",
-	"일식","중식", "금식","학식", 
-	"국밥",  "고기", "채식", "육식",
-	"한식", "샐러드",
-	"평양냉면", "고쌈", "비냉", "물냉", "밀면",
-	"짜장","짬뽕", "탕수육", "라조기덮밥","버섯덮밥",
-];
-
 app.set('port', process.env.PORT || 3000);
 //app.post method : for insert query
-app.post('/join', function(req, res){
-	var user = {
-		'userid':req.body.userid, 
-		'password':req.body.password, 
-		'nickname':req.body.nickname, 
-		'email':req.body.email,
-		'gender':req.body.gender }; 
+app.post('/join', function(req, res, next){
+	var userid = req.body.userid;
+	var password = req.body.password;
+	var nickname = req.body.nickname;  
+	var email = req.body.email;
+	var gender = req.body.gender;
+	var joindate = Date.now();
+ pg.connect(conString, function (err, client, done) {
+    if (err) {
+      // pass the error to the express error handler
+      return next(err);
+    }
+    //var query=client.query('INSERT INTO users (userid, password, nickname, email, gender, joindate) VALUES($1, $2, $3, $4, $5, $6)', [userid, password, nickname, email, gender, joindate], function (err, result) {
+  var query=client.query('select * from "users"',    function (err, result) {
+done(); //this done callback signals the pg driver that the connection can be closed or returned to the connection pool
+
+      if (err) {
+        // pass the error to the express error handler
+   console.error(err);
+        return next(err);
+      }
+   console.log(query);
+      res.send(200, 'success');
+    });
+  });
+});
+app.post('/search', function(req, res){
+	var menu = {
+		'hours':req.body.hours, 
+		'minutes':req.body.minutes, 
+		'man':req.body.man, 
+		'cheon':req.body.cheon,
+		'menu':req.body.menu }; 
 });
 //app.get method : adds route
 app.get('/login', function(req, res){
@@ -54,6 +79,39 @@ app.get('/join', function(req, res){
 
 app.get('/search', function(req, res){
 	res.render('search');
+var connection = new Connection(config);  
+connection.on('connect', function(err) {  
+	// If no error, then good to proceed.  
+        console.log("Connected");
+	if(err) return console.error(err);
+	executeStatement();
+});
+var Request = require('tedious').Request;  
+    var TYPES = require('tedious').TYPES;  
+  
+    function executeStatement() {  
+        request = new Request("SELECT ShopName from SHOP where SHOPNO IN (SELECT DISTINCT SHOPNO from MENU where TYPE = '주메뉴' and PRICE <= 3000)", function(err) {  
+        if (err) {  
+            console.log(err);}  
+        });  
+        var result = "";  
+        request.on('row', function(columns) {  
+            columns.forEach(function(column) {  
+              if (column.value === null) {  
+                console.log('NULL');  
+              } else {  
+                result+= column.value + " ";  
+              }  
+            });  
+            console.log(result);  
+            result ="";  
+        });  
+  
+        request.on('done', function(rowCount, more) {  
+        console.log(rowCount + ' rows returned');  
+        });  
+        connection.execSql(request);  
+    }  
 });
 app.get('/fortune', function(req, res){
 	res.render('fortune', {fortune: fortune.getFortune()});

@@ -1,18 +1,28 @@
 var express = require('express');
 var app = express();
+var bodyParser = require('body-parser');
+app.use(bodyParser.json());
+//sql connect
+const pg = require('pg');
+const conString = 'postgres://root:0909@localhost/masickdang'; 
+pg.connect(conString, function (err, client, done) {  
+  if (err) {
+    return console.error('error fetching client from pool', err)
+  }
+  client.query('SELECT * from USER', function (err, result) {
+    done();
+
+    if (err) {
+      return console.error('error happened during query', err)
+    }
+    console.log(result.rows[0]);
+  });
+});
+//login
 var login = require('./lib/logged_in.js');
 var logged_in = true;
-//mssql connect
-var Connection = require('tedious').Connection;
-var config = {
- 	userName: 'sangbusangjo1',  
-        password: '1215082s!',  
-        server: 'masickdangserver.database.windows.net',  
-        // If you are on Microsoft Azure, you need this:  
-        options: {encrypt: true, database: 'MASICKDANG'}
-};
+//what to eat feature
 var fortune = require('./lib/fortune.js');
-
 //handlebar view engine settings
 var handlebars = require('express-handlebars').create({ defaultLayout:'main2' });
 app.engine('handlebars', handlebars.engine);
@@ -20,13 +30,30 @@ app.set('view engine', 'handlebars');
 
 app.set('port', process.env.PORT || 3000);
 //app.post method : for insert query
-app.post('/join', function(req, res){
-	var user = {
-		'userid':req.body.userid, 
-		'password':req.body.password, 
-		'nickname':req.body.nickname, 
-		'email':req.body.email,
-		'gender':req.body.gender }; 
+app.post('/join', function(req, res, next){
+	var userid = req.body.userid;
+	var password = req.body.password;
+	var nickname = req.body.nickname;  
+	var email = req.body.email;
+	var gender = req.body.gender;
+	var joindate = Date.now();
+ pg.connect(conString, function (err, client, done) {
+    if (err) {
+      // pass the error to the express error handler
+      return next(err);
+    }
+    //var query=client.query('INSERT INTO users (userid, password, nickname, email, gender, joindate) VALUES($1, $2, $3, $4, $5, $6)', [userid, password, nickname, email, gender, joindate], function (err, result) {
+  var query=client.query('select * from users',    function (err, result) {
+done(); //this done callback signals the pg driver that the connection can be closed or returned to the connection pool
+      if (err) {
+        // pass the error to the express error handler
+   console.error(err);
+        return next(err);
+      }
+   console.log(query);
+      res.send(200, 'success');
+    });
+  });
 });
 app.post('/search', function(req, res){
 	var menu = {
