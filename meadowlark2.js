@@ -3,6 +3,7 @@ var app = express();
 var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 //sql connect
+/*
 const pg = require('pg');
 const conString = 'postgres://root:0909@localhost/masickdang'; 
 pg.connect(conString, function (err, client, done) {  
@@ -18,6 +19,8 @@ pg.connect(conString, function (err, client, done) {
     console.log(result.rows[0]);
   });
 });
+
+*/
 //login
 var login = require('./lib/logged_in.js');
 var logged_in = true;
@@ -37,6 +40,8 @@ app.post('/join', function(req, res, next){
 	var email = req.body.email;
 	var gender = req.body.gender;
 	var joindate = Date.now();
+//query
+/*
  pg.connect(conString, function (err, client, done) {
     if (err) {
       // pass the error to the express error handler
@@ -54,6 +59,8 @@ done(); //this done callback signals the pg driver that the connection can be cl
       res.send(200, 'success');
     });
   });
+*/
+
 });
 app.post('/search', function(req, res){
 	var menu = {
@@ -136,3 +143,4 @@ app.listen(app.get('port'), function(){
 	console.log('Express started on http://localhost:' +
 		app.get('port') + '; press Ctrl-C to terminate. ');
 });
+
